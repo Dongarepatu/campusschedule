@@ -1,0 +1,178 @@
+{% extends 'timetable/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Archive Search</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary">
+            <i class="fas fa-search me-2"></i>Search Archived Timetables
+        </h2>
+        <a href="{% url 'department_list' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Departments
+        </a>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Search Criteria</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{% url 'archive_search' %}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Department</label>
+                        <select name="department_id" class="form-select" required>
+                            <option value="">Select Department</option>
+                            {% for dept in all_departments %}
+                            <option value="{{ dept.id }}" {% if dept.id == department.id %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Academic Year</label>
+                        <select name="year" class="form-select" required>
+                            <option value="">Select Year</option>
+                            {% for year_entry in all_years %}
+                            <option value="{{ year_entry.year }}" {% if year_entry.year == search_year|add:"0" %}selected{% endif %}>
+                                {{ year_entry.year }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Semester</label>
+                        <select name="semester" class="form-select" required>
+                            <option value="">Select Semester</option>
+                            <option value="Semester 1" {% if search_semester == "Semester 1" %}selected{% endif %}>Semester 1</option>
+                            <option value="Semester 2" {% if search_semester == "Semester 2" %}selected{% endif %}>Semester 2</option>
+                            <option value="Semester 3" {% if search_semester == "Semester 3" %}selected{% endif %}>Semester 3</option>
+                            <option value="Semester 4" {% if search_semester == "Semester 4" %}selected{% endif %}>Semester 4</option>
+                            <option value="Semester 5" {% if search_semester == "Semester 5" %}selected{% endif %}>Semester 5</option>
+                            <option value="Semester 6" {% if search_semester == "Semester 6" %}selected{% endif %}>Semester 6</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    {% if search_results or search_year %}
+    <div class="card shadow">
+        <div class="card-header {% if search_results %}bg-success{% else %}bg-warning{% endif %} text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>
+                Search Results
+                {% if search_results %}
+                <span class="badge bg-light text-dark ms-2">{{ search_results.count }} found</span>
+                {% endif %}
+            </h5>
+        </div>
+        
+        <div class="card-body">
+            {% if search_results %}
+                <!-- Show search summary -->
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Found {{ search_results.count }} archived timetable(s) for 
+                    <strong>{{ department.name }}</strong> - 
+                    <strong>{{ search_semester }}</strong> 
+                    (Academic Year: <strong>{{ search_year }}</strong>)
+                </div>
+                
+                <!-- Results Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Semester</th>
+                                <th>Year</th>
+                                <th>Archived Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in search_results %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td class="fw-bold">{{ record.semester }}</td>
+                                <td>{{ record.year }}</td>
+                                <td>{{ record.created_at|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'view_history_detail' record.id %}" 
+                                           class="btn btn-outline-primary" title="View Timetable">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'download_timetable_pdf' record.department.id %}?semester={{ record.semester }}&year={{ record.year }}&history=true" 
+                                           class="btn btn-outline-danger" title="Download PDF">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <!-- No results message -->
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Archives Found</h4>
+                    <p class="text-muted">
+                        No archived timetables found for your search criteria.<br>
+                        Try different search parameters.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Initial state - no search yet -->
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>How to Search</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5>Search Instructions:</h5>
+                    <ul>
+                        <li>Select a <strong>Department</strong> from the dropdown</li>
+                        <li>Select an <strong>Academic Year</strong></li>
+                        <li>Choose a <strong>Semester</strong></li>
+                        <li>Click <strong>Search</strong> to find archived timetables</li>
+                    </ul>
+                    <p class="text-muted">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        You can search across all departments and academic years.
+                    </p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-archive fa-5x text-info"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

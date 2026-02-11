@@ -1,0 +1,2 @@
+Requirement already satisfied: openpyxl in d:\dhb\myenv\lib\site-packages (3.1.2)
+Requirement already satisfied: et-xmlfile in d:\dhb\myenv\lib\site-packages (from openpyxl) (2.0.0)

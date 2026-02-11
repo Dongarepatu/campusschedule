@@ -1,0 +1,423 @@
+{% extends 'timetable/base.html' %}
+{% block content %}
+
+<div class="modern-container">
+    <!-- Professional Header -->
+    <div class="header-section">
+        <div class="header-content">
+            <div class="header-icon">
+                <i class="fas fa-university"></i>
+            </div>
+            <div class="header-text">
+                <h1 class="header-title">{{ department.name }}</h1>
+                <p class="header-subtitle">Academic Timetable Management</p>
+            </div>
+        </div>
+        <div class="header-stats">
+            <div class="stat-item">
+                <span class="stat-number">{{ semesters|length }}</span>
+                <span class="stat-label">Semesters Available</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semester Grid -->
+    <div class="semester-grid">
+        {% for semester in semesters %}
+        <div class="semester-card modern-card">
+            <div class="card-header">
+                <div class="semester-number">{{ semester }}</div>
+                <div class="semester-icon">
+                    <i class="fas fa-calendar-week"></i>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if department.name in "BCA,BCS,BCOM" %}
+                    {% if "1" in semester or "2" in semester %}
+                    <div class="year-label primary">Year 1</div>
+                    {% elif "3" in semester or "4" in semester %}
+                    <div class="year-label secondary">Year 2</div>
+                    {% elif "5" in semester or "6" in semester %}
+                    <div class="year-label accent">Year 3</div>
+                    {% endif %}
+                {% elif department.name in "MCA,MCS" %}
+                    {% if "1" in semester or "2" in semester %}
+                    <div class="year-label primary">Year 1</div>
+                    {% elif "3" in semester or "4" in semester %}
+                    <div class="year-label secondary">Year 2</div>
+                    {% endif %}
+                {% endif %}
+                
+                <div class="action-buttons">
+                    <a href="{% url 'timetable_view' department.id %}?semester={{ semester }}" 
+                       class="btn btn-primary modern-btn btn-glow">
+                        <i class="fas fa-eye me-2"></i>View Timetable
+                    </a>
+                    <a href="{% url 'timetable_create' %}?department={{ department.id }}&semester={{ semester }}" 
+                       class="btn btn-outline modern-btn btn-glow">
+                        <i class="fas fa-plus me-2"></i>Add Entry
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Quick Actions - Single Line -->
+    <div class="quick-actions">
+        <a href="{% url 'department_list' %}" class="quick-btn primary">
+            <i class="fas fa-list-ul me-2"></i>All Departments
+        </a>
+        <a href="{% url 'dashboard' %}" class="quick-btn secondary">
+            <i class="fas fa-home me-2"></i>Dashboard
+        </a>
+        <a href="/admin/timetable/timetableentry/add/" class="quick-btn accent">
+            <i class="fas fa-cog me-2"></i>Admin Panel
+        </a>
+    </div>
+</div>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        min-height: 100vh;
+        margin: 0;
+    }
+
+    .modern-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Header - New Purple Gradient */
+    .header-section {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 2rem 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+    }
+
+    .header-content {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .header-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255,255,255,0.25);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+
+    .header-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: -0.01em;
+    }
+
+    .header-subtitle {
+        font-size: 1rem;
+        opacity: 0.95;
+        margin: 0;
+        font-weight: 400;
+    }
+
+    .header-stats {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .stat-number {
+        display: block;
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #c4b5fd;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Semester Grid */
+    .semester-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .modern-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 16px;
+        padding: 0;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .modern-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        border-color: #8b5cf6;
+    }
+
+    .card-header {
+        background: rgba(255, 255, 255, 0.7);
+        padding: 1.5rem 1.8rem;
+        border-bottom: 1px solid rgba(255,255,255,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .semester-number {
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .semester-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        transition: all 0.3s ease;
+    }
+
+    .modern-card:hover .semester-icon {
+        transform: scale(1.05);
+    }
+
+    .card-body {
+        padding: 1.8rem;
+    }
+
+    .year-label {
+        display: inline-block;
+        padding: 0.4rem 1.2rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-bottom: 1.5rem;
+    }
+
+    .year-label.primary { 
+        background: rgba(139, 92, 246, 0.2); 
+        color: #8b5cf6; 
+        backdrop-filter: blur(10px);
+    }
+    .year-label.secondary { 
+        background: rgba(139, 92, 246, 0.3); 
+        color: #8b5cf6; 
+        backdrop-filter: blur(10px);
+    }
+    .year-label.accent { 
+        background: rgba(236, 72, 153, 0.2); 
+        color: #ec4899; 
+        backdrop-filter: blur(10px);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .modern-btn {
+        flex: 1;
+        padding: 0.8rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        border: none;
+        position: relative;
+        overflow: hidden;
+        letter-spacing: 0.3px;
+    }
+
+    .btn-glow {
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-primary.modern-btn {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: white;
+    }
+
+    .btn-primary.modern-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+    }
+
+    .btn-outline.modern-btn {
+        background: rgba(255,255,255,0.9);
+        color: #6b7280;
+        border: 2px solid rgba(139, 92, 246, 0.3);
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+    }
+
+    .btn-outline.modern-btn:hover {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: white;
+        border-color: transparent;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+    }
+
+    /* Quick Actions - Single Line */
+    .quick-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 1.5rem;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        margin-top: 1.5rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .quick-btn {
+        padding: 0.8rem 2rem;
+        border-radius: 25px;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        letter-spacing: 0.3px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .quick-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        transition: left 0.5s;
+    }
+
+    .quick-btn:hover::before {
+        left: 100%;
+    }
+
+    .quick-btn.primary {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .quick-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    }
+
+    .quick-btn.secondary {
+        background: linear-gradient(135deg, #6b7280, #4b5563);
+        color: white;
+        box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+    }
+
+    .quick-btn.secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
+    }
+
+    .quick-btn.accent {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    }
+
+    .quick-btn.accent:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .header-content {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+        }
+
+        .semester-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .quick-actions {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .quick-btn {
+            width: 250px;
+            justify-content: center;
+        }
+    }
+</style>
+
+{% endblock %}

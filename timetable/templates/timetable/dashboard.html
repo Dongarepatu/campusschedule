@@ -1,0 +1,635 @@
+<!-- timetable/templates/timetable/dashboard.html -->
+{% extends 'timetable/base.html' %}
+
+{% block content %}
+<style>
+    @keyframes gradientShift {
+        0% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-40px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(40px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes bounce {
+
+        0%,
+        100% {
+            transform: translateY(0) rotate(0deg);
+        }
+
+        25% {
+            transform: translateY(-15px) rotate(-5deg);
+        }
+
+        50% {
+            transform: translateY(0) rotate(0deg);
+        }
+
+        75% {
+            transform: translateY(-8px) rotate(5deg);
+        }
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        50% {
+            transform: scale(1.05);
+            opacity: 0.8;
+        }
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    body {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 20%, #134e4a 40%, #166534 60%, #15803d 80%, #16a34a 100%);
+        background-size: 400% 400%;
+        animation: gradientShift 15s ease infinite;
+        min-height: 100vh;
+    }
+
+    .animate-box {
+        animation: fadeInDown 0.8s ease-out;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 20px;
+        padding: 2rem;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+        animation: scaleIn 0.6s ease-out;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--card-color), transparent);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.4s ease;
+    }
+
+    .stat-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-12px) scale(1.02);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+        background: rgba(255, 255, 255, 1);
+    }
+
+    .stat-card:nth-child(1) {
+        animation-delay: 0.1s;
+        --card-color: #667eea;
+    }
+
+    .stat-card:nth-child(2) {
+        animation-delay: 0.2s;
+        --card-color: #f093fb;
+    }
+
+    .stat-card:nth-child(3) {
+        animation-delay: 0.3s;
+        --card-color: #4facfe;
+    }
+
+    .icon-circle {
+        transition: all 0.4s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 70px;
+        height: 70px;
+    }
+
+    .stat-card:hover .icon-circle {
+        animation: bounce 1.5s ease-in-out infinite;
+        transform: scale(1.15);
+    }
+
+    .btn-custom {
+        border-radius: 10px;
+        padding: 12px 24px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-custom::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+
+    .btn-custom:hover::before {
+        width: 300px;
+        height: 300px;
+    }
+
+    .btn-custom:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    }
+
+    .btn-info {
+        background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+    }
+
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+    }
+
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    }
+
+    .bg-info-gradient {
+        background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+    }
+
+    .text-gradient {
+        color: #ffffff;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3),
+            0 0 40px rgba(22, 163, 74, 0.5),
+            0 0 60px rgba(234, 88, 12, 0.3);
+        animation: pulse 3s ease-in-out infinite;
+    }
+
+    .card {
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        animation: slideInLeft 0.8s ease-out;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+        color: white;
+        border: none;
+        padding: 1.5rem;
+        font-weight: 600;
+    }
+
+    .dept-card {
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        border-radius: 16px;
+        transition: all 0.4s ease;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .dept-card:hover {
+        border-color: #ea580c;
+        transform: translateY(-6px) scale(1.03);
+        box-shadow: 0 12px 40px rgba(234, 88, 12, 0.3);
+        background: rgba(255, 255, 255, 1);
+    }
+
+    .btn-outline-primary {
+        border: 2px solid #ea580c;
+        color: #ea580c;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+        border-color: transparent;
+        color: white;
+        transform: scale(1.08);
+        box-shadow: 0 8px 25px rgba(234, 88, 12, 0.4);
+    }
+
+    .empty-state {
+        animation: scaleIn 0.8s ease-out;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 3rem;
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    .empty-state i {
+        animation: bounce 3s ease-in-out infinite;
+    }
+
+    h1 {
+        font-size: 2.8rem;
+        font-weight: 800;
+        letter-spacing: -1px;
+        color: #ffffff;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4),
+            0 0 40px rgba(236, 72, 153, 0.6),
+            0 0 60px rgba(139, 92, 246, 0.4);
+    }
+
+    .text-center.mb-5 {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(15px);
+        padding: 2.5rem;
+        border-radius: 20px;
+        margin-bottom: 3rem !important;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stat-card .text-muted {
+        color: #6b7280 !important;
+        font-weight: 500;
+        text-shadow: none;
+    }
+
+    .stat-card h4 {
+        color: #1f2937;
+        font-weight: 700;
+    }
+
+    .text-center.mb-5 .text-muted {
+        color: rgba(255, 255, 255, 0.95) !important;
+        font-weight: 500;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Footer Styles */
+    .footer {
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border-top: 2px solid rgba(234, 88, 12, 0.3);
+        margin-top: 5rem;
+        padding: 3rem 0 1.5rem;
+        animation: fadeInUp 0.8s ease-out;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .footer-content {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .footer h5 {
+        color: #ffffff;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        position: relative;
+        display: inline-block;
+    }
+
+    .footer h5::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(90deg, #ea580c, #dc2626);
+        border-radius: 2px;
+    }
+
+    .footer-link {
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        display: block;
+        padding: 0.5rem 0;
+        transition: all 0.3s ease;
+        position: relative;
+        padding-left: 20px;
+    }
+
+    .footer-link::before {
+        content: '▸';
+        position: absolute;
+        left: 0;
+        opacity: 0;
+        transition: all 0.3s ease;
+        color: #ea580c;
+    }
+
+    .footer-link:hover {
+        color: #ffffff;
+        padding-left: 25px;
+        transform: translateX(5px);
+    }
+
+    .footer-link:hover::before {
+        opacity: 1;
+    }
+
+    .social-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 45px;
+        height: 45px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        color: #ffffff;
+        margin-right: 0.75rem;
+        transition: all 0.4s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .social-icon:hover {
+        background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+        transform: translateY(-5px) rotate(5deg) scale(1.1);
+        box-shadow: 0 8px 25px rgba(234, 88, 12, 0.4);
+        border-color: transparent;
+    }
+
+    .footer-info {
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .footer-info i {
+        color: #ea580c;
+        margin-right: 10px;
+        font-size: 1.1rem;
+    }
+
+    .copyright {
+        color: rgba(255, 255, 255, 0.6);
+        text-align: center;
+        font-size: 0.9rem;
+    }
+
+    .copyright .heart {
+        color: #dc2626;
+        animation: pulse 1.5s ease-in-out infinite;
+        display: inline-block;
+    }
+
+    .footer-logo {
+        font-size: 1.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="container animate-box">
+
+    <div class="text-center mb-5">
+        <h1 class="text-gradient">College Timetable Management</h1>
+        <p class="text-muted fs-5">Manage departments, faculty, and timetables efficiently.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="stat-card h-100">
+                <div class="d-flex flex-column justify-content-between h-100">
+                    <div>
+                        <div
+                            class="icon-circle bg-primary-gradient bg-opacity-10 p-3 rounded-circle text-white d-inline-block mb-3 bg-primary-gradient">
+                            <i class="fas fa-building fa-2x"></i>
+                        </div>
+                        <h4 class="fw-bold">Departments</h4>
+                        <p class="text-muted small">View and manage all departments</p>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'department_list' %}" class="btn btn-primary w-100 btn-custom shadow-sm">
+                            View Departments <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="stat-card h-100">
+                <div class="d-flex flex-column justify-content-between h-100">
+                    <div>
+                        <div
+                            class="icon-circle bg-success-gradient bg-opacity-10 p-3 rounded-circle text-white d-inline-block mb-3 bg-success-gradient">
+                            <i class="fas fa-calendar-plus fa-2x"></i>
+                        </div>
+                        <h4 class="fw-bold">Create Timetable</h4>
+                        <p class="text-muted small">Add new timetable entries</p>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'timetable_create' %}" class="btn btn-success w-100 btn-custom shadow-sm">
+                            Create Entry <i class="fas fa-plus ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="stat-card h-100">
+                <div class="d-flex flex-column justify-content-between h-100">
+                    <div>
+                        <div
+                            class="icon-circle bg-info-gradient bg-opacity-10 p-3 rounded-circle text-white d-inline-block mb-3 bg-info-gradient">
+                            <i class="fas fa-user-graduate fa-2x"></i>
+                        </div>
+                        <h4 class="fw-bold">Admin Panel</h4>
+                        <p class="text-muted small">Manage database and users</p>
+                    </div>
+                    <div class="mt-3">
+                        <a href="/admin/" class="btn btn-info w-100 btn-custom shadow-sm">
+                            Go to Admin <i class="fas fa-cog ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if departments %}
+    <div class="card mt-5">
+        <div class="card-header">
+            <h5 class="mb-0">Available Departments</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for dept in departments %}
+                <div class="col-md-4 mb-3">
+                    <div class="dept-card card">
+                        <div class="card-body">
+                            <h6 class="card-title fw-bold">{{ dept.name }}</h6>
+                            <a href="{% url 'timetable_view' dept.id %}" class="btn btn-outline-primary btn-sm">
+                                View Timetable
+                            </a>
+                            <a href="{% url 'department_history' dept.id %}"
+                                class="btn btn-outline-secondary shadow-sm">
+                                <i class="fas fa-history me-1"></i> History
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5 empty-state">
+        <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+        <h4>No Departments Found</h4>
+        <p class="text-muted">Please add departments through the Admin Panel first.</p>
+        <a href="/admin/timetable/department/add/" class="btn btn-primary btn-custom">
+            <i class="fas fa-plus me-2"></i>Add First Department
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="footer-logo">
+                        <i class="fas fa-graduation-cap me-2"></i>Timetable System
+                    </div>
+                    <p class="text-white-50 mb-3">
+                        Efficiently manage your college timetables, departments, and faculty with our comprehensive management system.
+                    </p>
+                    <div class="d-flex">
+                        <a href="#" class="social-icon">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="social-icon">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="social-icon">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="#" class="social-icon">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <h5>Quick Links</h5>
+                    <a href="{% url 'department_list' %}" class="footer-link">Departments</a>
+                    <a href="{% url 'timetable_create' %}" class="footer-link">Create Timetable</a>
+                    <a href="/admin/" class="footer-link">Admin Panel</a>
+                    <a href="#" class="footer-link">Documentation</a>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <h5>Contact Info</h5>
+                    <div class="footer-info">
+                        <i class="fas fa-envelope"></i>
+                        <span>info@timetable.edu</span>
+                    </div>
+                    <div class="footer-info">
+                        <i class="fas fa-phone"></i>
+                        <span>+91 123 456 7890</span>
+                    </div>
+                    <div class="footer-info">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Indore, Madhya Pradesh, India</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="copyright">
+            <p class="mb-0">
+                &copy; 2026 College Timetable Management. Made with <span class="heart">❤</span> for Education
+            </p>
+        </div>
+    </div>
+</footer>
+{% endblock %}

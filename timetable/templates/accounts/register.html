@@ -1,0 +1,50 @@
+{% extends 'timetable/base.html' %}
+
+{% block content %}
+<div class="container mt-5 mb-5 animate-box">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-success text-white text-center py-3">
+                    <h3 class="mb-0"><i class="fas fa-user-plus me-2"></i>Register College</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm mt-3">
+                            Register & Get Started
+                        </button>
+                    </form>
+                </div>
+                <div class="card-footer text-center bg-light py-3">
+                    <p class="mb-0">Already have an account? <a href="{% url 'login' %}" class="text-success fw-bold">Login Here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Styling for Django's default form fields to match Bootstrap */
+    input[type="text"], input[type="password"], input[type="email"] {
+        display: block;
+        width: 100%;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+    }
+</style>
+{% endblock %}

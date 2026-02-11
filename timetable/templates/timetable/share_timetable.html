@@ -1,0 +1,241 @@
+<!-- timetable/templates/timetable/share_timetable.html -->
+{% extends 'timetable/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="fw-bold text-dark mb-3">
+                    <i class="fas fa-share-alt me-2"></i>Share Timetable
+                </h1>
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+                        <h4 class="text-primary mb-2">{{ department.name }}</h4>
+                        <h5 class="text-success">{{ selected_semester }}</h5>
+                        <p class="text-muted mb-0">Share this timetable with others</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Preview -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-image me-2"></i>Preview Image</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <img src="{{ image_url }}" 
+                             alt="{{ department.name }} {{ selected_semester }} Timetable"
+                             class="img-fluid rounded border"
+                             style="max-height: 300px;">
+                    </div>
+                    <a href="{{ image_url }}" 
+                       class="btn btn-primary"
+                       download="{{ department.name }}_{{ selected_semester }}_Timetable.png">
+                        <i class="fas fa-download me-2"></i>Download Image
+                    </a>
+                </div>
+            </div>
+
+            <!-- Share Options -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-share-square me-2"></i>Share Via</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- WhatsApp -->
+                        <div class="col-md-6">
+                            <a href="{{ whatsapp_url }}" 
+                               target="_blank"
+                               class="btn btn-success w-100 p-3">
+                                <i class="fab fa-whatsapp fa-2x me-2"></i>
+                                WhatsApp
+                            </a>
+                        </div>
+
+                        <!-- Telegram -->
+                        <div class="col-md-6">
+                            <a href="{{ telegram_url }}" 
+                               target="_blank"
+                               class="btn btn-info w-100 p-3">
+                                <i class="fab fa-telegram fa-2x me-2"></i>
+                                Telegram
+                            </a>
+                        </div>
+
+                        <!-- Facebook -->
+                        <div class="col-md-6">
+                            <a href="{{ facebook_url }}" 
+                               target="_blank"
+                               class="btn btn-primary w-100 p-3">
+                                <i class="fab fa-facebook fa-2x me-2"></i>
+                                Facebook
+                            </a>
+                        </div>
+
+                        <!-- Twitter -->
+                        <div class="col-md-6">
+                            <a href="{{ twitter_url }}" 
+                               target="_blank"
+                               class="btn btn-dark w-100 p-3">
+                                <i class="fab fa-twitter fa-2x me-2"></i>
+                                Twitter
+                            </a>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-12">
+                            <a href="mailto:?subject={{ department.name }} {{ selected_semester }} Timetable&body=Check out this timetable: {{ timetable_url }}"
+                               class="btn btn-secondary w-100 p-3">
+                                <i class="fas fa-envelope fa-2x me-2"></i>
+                                Email
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Direct Link -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-link me-2"></i>Direct Link</h5>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               id="share-link"
+                               value="{{ timetable_url }}"
+                               readonly>
+                        <button class="btn btn-outline-primary" 
+                                type="button"
+                                onclick="copyToClipboard()">
+                            <i class="fas fa-copy me-2"></i>Copy
+                        </button>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        Share this link to give direct access to the timetable
+                    </small>
+                </div>
+            </div>
+
+            <!-- QR Code Section (Optional) -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i>QR Code</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted mb-3">Scan this QR code to quickly access the timetable:</p>
+                    <div class="mb-3" id="qrcode-container">
+                        <!-- QR Code will be generated here -->
+                        <div class="text-center text-muted">
+                            <i class="fas fa-qrcode fa-5x mb-2"></i>
+                            <p>Enable JavaScript for QR code</p>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        Generated QR codes make it easy to share with mobile devices
+                    </small>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center mt-5">
+                <div class="btn-group">
+                    <a href="{% url 'timetable_view' department.id %}?semester={{ selected_semester }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Timetable
+                    </a>
+                    <a href="{% url 'download_all_formats' department.id %}?semester={{ selected_semester }}" 
+                       class="btn btn-outline-success">
+                        <i class="fas fa-download me-2"></i>Download Formats
+                    </a>
+                    <a href="{% url 'dashboard' %}" 
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-home me-2"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    function copyToClipboard() {
+        const copyText = document.getElementById("share-link");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            // Show success message
+            const originalText = event.target.innerHTML;
+            event.target.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+            event.target.classList.remove('btn-outline-primary');
+            event.target.classList.add('btn-success');
+            
+            setTimeout(() => {
+                event.target.innerHTML = originalText;
+                event.target.classList.remove('btn-success');
+                event.target.classList.add('btn-outline-primary');
+            }, 2000);
+        });
+    }
+    
+    // Generate QR Code
+    document.addEventListener('DOMContentLoaded', function() {
+        const qrContainer = document.getElementById('qrcode-container');
+        const timetableUrl = document.getElementById('share-link').value;
+        
+        // Clear the placeholder
+        qrContainer.innerHTML = '';
+        
+        // Generate QR code
+        new QRCode(qrContainer, {
+            text: timetableUrl,
+            width: 200,
+            height: 200,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    });
+</script>
+
+<style>
+    .btn {
+        transition: all 0.3s ease;
+    }
+    .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    #qrcode-container {
+        min-height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #qrcode-container img {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 10px;
+        background: white;
+    }
+    .input-group {
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .card {
+        border: none;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .card-header {
+        border-radius: 12px 12px 0 0 !important;
+    }
+</style>
+{% endblock %}

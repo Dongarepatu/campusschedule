@@ -1,0 +1,569 @@
+{% extends 'timetable/base.html' %}
+{% block content %}
+
+<div class="container-fluid">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="mb-4 no-print">
+        <ol class="breadcrumb modern-breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'department_list' %}">Departments</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'department_semesters' department.id %}">{{ department.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'department_history' department.id %}">History</a></li>
+            <li class="breadcrumb-item active">{{ selected_semester }} ({{ record.year }})</li>
+        </ol>
+    </nav>
+
+    <!-- Header for Print -->
+    <div class="text-center mb-4" id="print-header">
+        <h3 class="fw-bold text-dark mb-1">D.H.B. SONI COLLEGE, SOLAPUR</h3>
+        <h4 class="fw-bold mb-1" style="color: #7c3aed;">{{ department.name }} Department</h4>
+        <h4 class="mb-3" style="color: #10b981;">
+            <i class="fas fa-graduation-cap me-2"></i>{{ selected_semester }} Timetable
+        </h4>
+        <div class="badge bg-warning text-dark p-2">
+            <i class="fas fa-history me-1"></i> Archived: Academic Year {{ record.year }}
+        </div>
+    </div>
+
+    <!-- Screen-only Action Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print fade-in">
+        <div>
+            <h2 class="fw-bold header-gradient mb-1">
+                <i class="fas fa-university me-2"></i>{{ department.name }}
+            </h2>
+            <h4 class="text-emerald">
+                <i class="fas fa-graduation-cap me-2 icon-bounce"></i>{{ selected_semester }} Timetable
+            </h4>
+            <div class="d-flex align-items-center mt-1">
+                <span class="badge bg-warning text-dark me-2">
+                    <i class="fas fa-history me-1"></i> Archived: {{ record.year }}
+                </span>
+                <small class="text-muted">
+                    <i class="fas fa-calendar me-1"></i> Archived on: {{ record.created_at|date:"M d, Y" }}
+                </small>
+            </div>
+        </div>
+
+        <!-- Action Buttons - Only Print, PDF, and Back -->
+        <div class="btn-group no-print">
+            <button onclick="window.print()" class="btn btn-gradient-slate">
+                <i class="fas fa-print me-2"></i>Print
+            </button>
+            <a href="{% url 'download_timetable_pdf' department.id %}?semester={{ selected_semester }}&year={{ record.year }}&history=true" 
+               class="btn btn-gradient-danger">
+                <i class="fas fa-file-pdf me-2"></i>Download PDF
+            </a>
+            <a href="{% url 'department_history' department.id %}" class="btn btn-gradient-purple">
+                <i class="fas fa-arrow-left me-2"></i>Back to History
+            </a>
+        </div>
+    </div>
+
+    <!-- Timetable with signatures integrated -->
+    <div class="modern-card shadow-lg scale-in" id="timetable-card">
+        <div class="card-header gradient-header text-white no-print">
+            <h5 class="mb-0">
+                <i class="fas fa-calendar-alt me-2 icon-pulse"></i>
+                Archived Schedule - {{ selected_semester }} ({{ record.year }})
+                <span class="badge bg-warning ms-2">Read Only</span>
+            </h5>
+        </div>
+
+        <div class="card-body p-0">
+            {% if has_entries %}
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead class="table-gradient">
+                        <tr>
+                            <th style="width: 15%;" class="align-middle text-center">Time Slot</th>
+                            {% for day in days %}
+                            <th class="align-middle text-center">{{ day }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in matrix %}
+                        <tr class="table-row-hover">
+                            <td class="fw-bold time-slot align-middle text-center">
+                                <i class="fas fa-clock me-2 text-purple no-print"></i>{{ row.time }}
+                            </td>
+
+                            {% for entries in row.data %}
+                            <td class="p-1 align-top">
+                                {% if entries %}
+                                    {% for entry in entries %}
+                                        {% if entry.is_lab %}
+                                            <!-- Lab session display -->
+                                            <div class="p-2 mb-2 rounded timetable-entry lab-session">
+                                                <!-- NO DELETE BUTTON - READ ONLY -->
+                                                
+                                                <!-- Subject -->
+                                                <div class="fw-bold subject-text mb-1">
+                                                    <i class="fas fa-flask me-1 icon-small no-print"></i>
+                                                    {{ entry.subject }} (Lab)
+                                                </div>
+
+                                                <!-- Faculty -->
+                                                <div class="small faculty-text">
+                                                    <i class="fas fa-users me-1 no-print"></i>
+                                                    {% for faculty_name in entry.faculties %}
+                                                        <div class="faculty-name">{{ faculty_name }}</div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <!-- Regular session display -->
+                                            <div class="p-2 mb-2 rounded timetable-entry {% if entry.faculty != 'Break/Recess' %}entry-with-faculty{% else %}entry-break{% endif %}">
+                                                <!-- NO DELETE BUTTON - READ ONLY -->
+                                                
+                                                <!-- Subject -->
+                                                <div class="fw-bold subject-text mb-1">
+                                                    <i class="fas fa-book-open me-1 icon-small no-print"></i>
+                                                    {{ entry.subject }}
+                                                </div>
+
+                                                <!-- Faculty -->
+                                                <div class="small faculty-text">
+                                                    {% if entry.faculty != 'Break/Recess' %}
+                                                    <i class="fas fa-chalkboard-teacher me-1 no-print"></i>
+                                                    {{ entry.faculty }}
+                                                    {% else %}
+                                                    <i class="fas fa-coffee me-1 no-print"></i>
+                                                    Break/Recess
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                <div class="text-center text-muted py-4 empty-slot">
+                                    <i class="fas fa-clock fa-lg no-print"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 empty-state">
+                <i class="fas fa-calendar-plus fa-4x text-muted mb-3 icon-float"></i>
+                <h4>No Timetable Entries in Archive</h4>
+                <p class="text-muted mb-4">This archived timetable is empty.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Signatures moved inside the main card -->
+        <div class="card-footer p-3" id="signature-section">
+            <div class="row">
+                <div class="col-4 text-center">
+                    <div class="signature-line mb-1"></div>
+                    <p class="fw-bold mb-0 small">HOD</p>
+                    <p class="small text-muted mb-0">{{ department.name }} Department</p>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="signature-line mb-1"></div>
+                    <p class="fw-bold mb-0 small">Director</p>
+                    <p class="small text-muted mb-0">D.H.B. Soni College</p>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="signature-line mb-1"></div>
+                    <p class="fw-bold mb-0 small">Principal</p>
+                    <p class="small text-muted mb-0">D.H.B. Soni College</p>
+                </div>
+            </div>
+            <div class="text-center mt-2">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    {{ department.name }} - {{ selected_semester }} ({{ record.year }}) |
+                    Archived: {{ record.created_at|date:"F j, Y" }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --purple: #7c3aed;
+        --purple-light: #a78bfa;
+        --purple-dark: #5b21b6;
+        --emerald: #10b981;
+        --emerald-light: #6ee7b7;
+        --emerald-dark: #059669;
+        --slate: #475569;
+        --slate-light: #94a3b8;
+        --amber: #f59e0b;
+        --rose: #f43f5e;
+        --danger: #ef4444;
+        --danger-dark: #dc2626;
+        --lab-blue: #0ea5e9;
+        --lab-light: #e0f2fe;
+    }
+
+    /* Color Utilities */
+    .text-purple {
+        color: var(--purple) !important;
+    }
+
+    .text-emerald {
+        color: var(--emerald) !important;
+    }
+
+    .text-amber {
+        color: var(--amber) !important;
+    }
+
+    .text-danger {
+        color: var(--danger) !important;
+    }
+
+    /* Gradient Text */
+    .header-gradient {
+        background: linear-gradient(135deg, var(--purple) 0%, var(--emerald) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Modern Breadcrumb */
+    .modern-breadcrumb {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 12px;
+        padding: 12px 20px;
+        border: 1px solid #e2e8f0;
+        animation: slideDown 0.5s ease-out;
+    }
+
+    /* Gradient Buttons */
+    .btn-gradient-slate {
+        background: linear-gradient(135deg, var(--slate) 0%, var(--slate-light) 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(71, 85, 105, 0.3);
+    }
+
+    .btn-gradient-slate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(71, 85, 105, 0.4);
+        color: white;
+    }
+
+    .btn-gradient-purple {
+        background: linear-gradient(135deg, var(--purple) 0%, var(--purple-dark) 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    }
+
+    .btn-gradient-purple:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+        color: white;
+    }
+
+    .btn-gradient-danger {
+        background: linear-gradient(135deg, var(--danger) 0%, var(--danger-dark) 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-gradient-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        color: white;
+    }
+
+    /* Modern Card */
+    .modern-card {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        background: white;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Gradient Header */
+    .gradient-header {
+        background: linear-gradient(135deg, var(--purple) 0%, var(--emerald) 100%);
+        padding: 15px 20px;
+    }
+
+    /* Modern Table */
+    .table-modern {
+        border-collapse: collapse !important;
+        border: 1px solid #d1d5db !important;
+        width: 100%;
+    }
+
+    .table-modern th,
+    .table-modern td {
+        border: 1px solid #d1d5db !important;
+        padding: 12px;
+    }
+
+    .table-gradient {
+        background: linear-gradient(135deg, var(--slate) 0%, var(--purple-dark) 100%);
+        color: white;
+    }
+
+    .table-row-hover:hover {
+        background: linear-gradient(to right, #faf5ff 0%, #f0fdf4 100%);
+    }
+
+    .time-slot {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    /* Timetable Entries */
+    .timetable-entry {
+        border: 1px solid #d1d5db !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .entry-with-faculty {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border-color: var(--emerald) !important;
+    }
+
+    .entry-break {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-color: var(--amber) !important;
+    }
+
+    /* Lab Session Styling */
+    .lab-session {
+        background: linear-gradient(135deg, var(--lab-light) 0%, #bae6fd 100%);
+        border-color: var(--lab-blue) !important;
+    }
+
+    .lab-session .subject-text {
+        color: #0369a1 !important;
+    }
+
+    .lab-session .faculty-text .faculty-name {
+        padding: 2px 0;
+        border-bottom: 1px dashed #93c5fd;
+    }
+
+    .lab-session .faculty-text .faculty-name:last-child {
+        border-bottom: none;
+    }
+
+    .subject-text {
+        color: var(--slate);
+        font-size: 0.95rem;
+    }
+
+    .faculty-text {
+        color: var(--slate-light);
+    }
+
+    .empty-slot {
+        transition: all 0.3s ease;
+        border: 1px solid #e5e7eb !important;
+    }
+
+    /* Signature styles */
+    .signature-line {
+        border-top: 1px solid #000;
+        width: 80%;
+        display: inline-block;
+        margin-bottom: 5px;
+    }
+
+    /* Print styles - ENHANCED */
+    @media print {
+        /* Hide all navigation and non-essential elements */
+        .no-print, 
+        nav,
+        header,
+        .breadcrumb,
+        .btn-group,
+        .gradient-header,
+        .card-header,
+        .icon-pulse,
+        .badge,
+        i.fas,
+        .no-print {
+            display: none !important;
+        }
+        
+        /* Show print header */
+        #print-header {
+            display: block !important;
+            page-break-inside: avoid;
+            page-break-after: avoid;
+        }
+        
+        #print-header h3 {
+            font-size: 18px !important;
+            margin-bottom: 5px !important;
+            color: #000 !important;
+        }
+        
+        #print-header h4 {
+            font-size: 14px !important;
+            margin-bottom: 3px !important;
+        }
+        
+        #print-header .badge {
+            display: inline-block !important;
+            background: #ffc107 !important;
+            color: #000 !important;
+            padding: 2px 8px !important;
+            font-size: 10px !important;
+            margin-top: 5px !important;
+        }
+        
+        /* Show signature section */
+        #signature-section {
+            display: block !important;
+            page-break-inside: avoid;
+            margin-top: 5px !important;
+            padding: 10px !important;
+            border-top: 2px solid #000 !important;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #000 !important;
+            width: 70% !important;
+        }
+        
+        #signature-section .fw-bold {
+            font-size: 10px !important;
+        }
+        
+        #signature-section .small {
+            font-size: 9px !important;
+        }
+        
+        /* Body and container styles */
+        body {
+            font-size: 10px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            color: black !important;
+        }
+        
+        .container-fluid {
+            padding: 5mm !important;
+            margin: 0 !important;
+            width: 100% !important;
+        }
+        
+        /* Timetable card styling */
+        #timetable-card {
+            border: 2px solid #000 !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            page-break-inside: avoid;
+        }
+        
+        /* Table styling for print */
+        .table-modern {
+            border: 2px solid #000 !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+        
+        .table-modern th,
+        .table-modern td {
+            border: 1px solid #000 !important;
+            padding: 6px !important;
+            font-size: 9px !important;
+        }
+        
+        .table-gradient {
+            background-color: #475569 !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        
+        .table-gradient th {
+            font-weight: bold !important;
+            padding: 8px !important;
+            border: 1px solid #000 !important;
+        }
+        
+        .time-slot {
+            background-color: #f8f9fa !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            font-weight: bold !important;
+        }
+        
+        .timetable-entry {
+            border: 1px solid #666 !important;
+            background-color: #ffffff !important;
+            padding: 4px !important;
+            margin-bottom: 2px !important;
+        }
+        
+        .lab-session {
+            background-color: #f0f9ff !important;
+            border-color: #0ea5e9 !important;
+        }
+        
+        .timetable-entry .fw-bold {
+            font-size: 9px !important;
+            color: #000 !important;
+            font-weight: bold !important;
+        }
+        
+        .timetable-entry .small {
+            font-size: 8px !important;
+            color: #333 !important;
+        }
+        
+        .lab-session .subject-text {
+            color: #0369a1 !important;
+        }
+        
+        /* Ensure everything fits on one page */
+        @page {
+            size: A4 landscape;
+            margin: 5mm;
+        }
+        
+        /* Prevent page breaks inside important elements */
+        table {
+            page-break-inside: auto !important;
+        }
+        
+        tr {
+            page-break-inside: avoid !important;
+            page-break-after: auto !important;
+        }
+        
+        thead {
+            display: table-header-group !important;
+        }
+        
+        tfoot {
+            display: table-footer-group !important;
+        }
+    }
+</style>
+
+<script>
+    function downloadPDF() {
+        window.print();
+    }
+</script>
+
+{% endblock %}

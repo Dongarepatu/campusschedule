@@ -1,0 +1,329 @@
+{% extends 'timetable/base.html' %}
+
+{% block content %}
+<div class="container animate-box">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add New Timetable Entry</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" id="timetable-form">
+                        {% csrf_token %}
+                        
+                        <!-- Display form errors at the top -->
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Please correct the following errors:</strong>
+                            <ul class="mb-0">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ field|title }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Department *</label>
+                                {{ form.department }}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Semester *</label>
+                                {{ form.semester }}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label" id="day-label">Day *</label>
+                                {{ form.day }}
+                                <small id="day-help" class="form-text text-muted"></small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Subject *</label>
+                                {{ form.subject }}
+                                <div class="form-text">Use "Recess", "Lunch" or "Break" for free periods.</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Start Time *</label>
+                                {{ form.start_time }}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">End Time *</label>
+                                {{ form.end_time }}
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <label class="form-label fw-bold text-secondary">Is this a Lab Session?</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="is_lab" id="type_lecture" value="lecture" checked autocomplete="off">
+                                    <label class="btn btn-outline-primary py-2" for="type_lecture">
+                                        <i class="fas fa-chalkboard-teacher me-2"></i>Lecture (Single Teacher)
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="is_lab" id="type_lab" value="lab" autocomplete="off">
+                                    <label class="btn btn-outline-primary py-2" for="type_lab">
+                                        <i class="fas fa-flask me-2"></i>Lab (Multiple Teachers)
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-12" id="single-faculty-wrapper">
+                                <label class="form-label" id="faculty-label">Faculty (Single Teacher)</label>
+                                {{ form.faculty }}
+                                <small id="faculty-help" class="form-text text-muted"></small>
+                            </div>
+                            
+                            <div class="col-md-12" id="multi-faculty-wrapper" style="display: none;">
+                                <label class="form-label text-primary fw-bold">Lab Faculty (Multiple Teachers)</label>
+                                {{ form.lab_faculty }}
+                                <div class="form-text text-primary">Hold Ctrl/Cmd to select multiple teachers for labs</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-save me-2"></i>Save Entry
+                            </button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-lg px-5 ms-2">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>About Departments</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">Available Departments & Years:</p>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>BCA / BCS / BCOM</strong>
+                            <span class="badge bg-primary">3 Years (Sem 1-6)</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>MCA / MCS</strong>
+                            <span class="badge bg-success">2 Years (Sem 1-4)</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Replace the script section with this: -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const subjectInput = document.querySelector('#id_subject');
+    const daySelect = document.querySelector('#id_day');
+    const facultySelect = document.querySelector('#id_faculty');
+    const labFacultySelect = document.querySelector('#id_lab_faculty');
+    const lectureRadio = document.querySelector('#type_lecture');
+    const labRadio = document.querySelector('#type_lab');
+    const singleFacultyWrapper = document.querySelector('#single-faculty-wrapper');
+    const multiFacultyWrapper = document.querySelector('#multi-faculty-wrapper');
+    const dayLabel = document.querySelector('#day-label');
+    const facultyLabel = document.querySelector('#faculty-label');
+    const dayHelp = document.querySelector('#day-help');
+    const facultyHelp = document.querySelector('#faculty-help');
+    
+    // Function to check if subject is a break
+    function isBreakSubject(subject) {
+        if (!subject) return false;
+        const subjectLower = subject.toLowerCase();
+        return subjectLower.includes('recess') || 
+               subjectLower.includes('lunch') || 
+               subjectLower.includes('break') || 
+               subjectLower.includes('interval');
+    }
+    
+    // Function to update form field requirements
+    function updateFieldRequirements() {
+        const subject = subjectInput.value;
+        const isBreak = isBreakSubject(subject);
+        const isLab = labRadio.checked;
+        
+        console.log('Subject:', subject, 'isBreak:', isBreak, 'isLab:', isLab);
+        
+        // Update Day field
+        if (isBreak) {
+            // For breaks, day is optional
+            daySelect.required = false;
+            dayLabel.innerHTML = 'Day <span class="text-muted">(Optional for Break/Recess)</span>';
+            dayHelp.textContent = 'Optional: Leave empty to apply break to all days';
+            dayHelp.className = 'form-text text-info';
+            
+            // Update Day select options if needed
+            if (daySelect.options.length > 0 && daySelect.options[0].value === '') {
+                daySelect.options[0].text = 'Select Day (Optional for Break)';
+            }
+        } else {
+            // For regular entries, day is required
+            daySelect.required = true;
+            dayLabel.innerHTML = 'Day <span class="text-danger">*</span>';
+            dayHelp.textContent = 'Required for lectures and lab sessions';
+            dayHelp.className = 'form-text text-muted';
+            
+            // Update Day select options if needed
+            if (daySelect.options.length > 0 && daySelect.options[0].value === '') {
+                daySelect.options[0].text = 'Select Day *';
+            }
+        }
+        
+        // Update Faculty fields based on mode
+        if (isLab) {
+            // Lab mode
+            singleFacultyWrapper.style.display = 'none';
+            multiFacultyWrapper.style.display = 'block';
+            facultySelect.required = false;
+            
+            // Clear single faculty if selected
+            facultySelect.value = '';
+            
+            // Update lab faculty requirements
+            if (isBreak) {
+                // For breaks in lab mode (shouldn't happen, but just in case)
+                labFacultySelect.required = false;
+                multiFacultyWrapper.querySelector('label').innerHTML = 'Lab Faculty <span class="text-muted">(Not needed for Break/Recess)</span>';
+            } else {
+                labFacultySelect.required = true;
+                multiFacultyWrapper.querySelector('label').innerHTML = 'Lab Faculty (Multiple Teachers) <span class="text-danger">*</span>';
+            }
+        } else {
+            // Lecture mode
+            singleFacultyWrapper.style.display = 'block';
+            multiFacultyWrapper.style.display = 'none';
+            labFacultySelect.required = false;
+            
+            // Clear lab faculty if selected
+            labFacultySelect.selectedIndex = -1;
+            
+            // Update single faculty requirements
+            if (isBreak) {
+                // For breaks, faculty is not required
+                facultySelect.required = false;
+                facultyLabel.innerHTML = 'Faculty <span class="text-muted">(Not needed for Break/Recess)</span>';
+                facultyHelp.textContent = 'Faculty not required for recess/lunch/break';
+                facultyHelp.className = 'form-text text-info';
+                
+                // Clear faculty if selected
+                facultySelect.value = '';
+            } else {
+                // For regular lectures, faculty is required
+                facultySelect.required = true;
+                facultyLabel.innerHTML = 'Faculty (Single Teacher) <span class="text-danger">*</span>';
+                facultyHelp.textContent = 'Required for lecture sessions';
+                facultyHelp.className = 'form-text text-muted';
+            }
+        }
+        
+        // Visual feedback for day field
+        if (isBreak) {
+            daySelect.style.borderColor = '#6c757d'; // Gray for optional
+        } else if (daySelect.required && !daySelect.value) {
+            daySelect.style.borderColor = '#dc3545'; // Red for required but empty
+        } else {
+            daySelect.style.borderColor = '#198754'; // Green for valid
+        }
+    }
+    
+    // Toggle between single and multi faculty
+    function toggleFacultyMode() {
+        if (labRadio.checked) {
+            singleFacultyWrapper.style.display = 'none';
+            multiFacultyWrapper.style.display = 'block';
+        } else {
+            singleFacultyWrapper.style.display = 'block';
+            multiFacultyWrapper.style.display = 'none';
+        }
+        updateFieldRequirements();
+    }
+    
+    // Initial setup
+    toggleFacultyMode();
+    updateFieldRequirements();
+    
+    // Event listeners
+    subjectInput.addEventListener('input', updateFieldRequirements);
+    lectureRadio.addEventListener('change', toggleFacultyMode);
+    labRadio.addEventListener('change', toggleFacultyMode);
+    daySelect.addEventListener('change', updateFieldRequirements);
+    facultySelect.addEventListener('change', updateFieldRequirements);
+    
+    // Also update when form is submitted (just in case)
+    document.querySelector('#timetable-form').addEventListener('submit', function(e) {
+        const subject = subjectInput.value;
+        const isBreak = isBreakSubject(subject);
+        const isLab = labRadio.checked;
+        
+        // Final validation
+        if (!isBreak && !daySelect.value) {
+            e.preventDefault();
+            alert('Please select a day for this entry.');
+            daySelect.focus();
+            return false;
+        }
+        
+        if (!isLab && !isBreak && !facultySelect.value) {
+            e.preventDefault();
+            alert('Please select a faculty member for this lecture.');
+            facultySelect.focus();
+            return false;
+        }
+        
+        if (isLab && !isBreak && labFacultySelect.selectedOptions.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one faculty member for the lab session.');
+            labFacultySelect.focus();
+            return false;
+        }
+        
+        // IMPORTANT: We don't need to add hidden input anymore
+        // The radio buttons with name="is_lab" will handle this
+        return true;
+    });
+});
+</script>
+
+<style>
+    .animate-box {
+        animation: fadeInUp 0.8s ease-out;
+    }
+    select.form-control, input.form-control {
+        padding: 10px;
+        border-radius: 8px;
+        transition: border-color 0.3s ease;
+    }
+    /* Style for the Multi-select box to make it taller */
+    #multi-faculty-wrapper select {
+        height: 150px !important;
+        border: 2px solid #cfe2ff;
+    }
+    .btn-check:checked + .btn-outline-primary {
+        background-color: #0d6efd;
+        color: white;
+        box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2);
+    }
+    /* Visual feedback for fields */
+    select:required:invalid {
+        border-color: #dc3545;
+    }
+    select:valid {
+        border-color: #198754;
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}

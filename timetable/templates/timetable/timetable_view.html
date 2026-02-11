@@ -1,0 +1,1238 @@
+{% extends 'timetable/base.html' %}
+{% block content %}
+
+<div class="container-fluid">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="mb-4 no-print">
+        <ol class="breadcrumb modern-breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'department_list' %}">Departments</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'department_semesters' department.id %}">{{ department.name
+                    }}</a></li>
+            <li class="breadcrumb-item active">{{ selected_semester }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header for Print -->
+    <div class="text-center mb-4" id="print-header">
+        <h3 class="fw-bold text-dark mb-1">D.H.B. SONI COLLEGE, SOLAPUR</h3>
+        <h4 class="fw-bold mb-1" style="color: #7c3aed;">{{ department.name }} Department</h4>
+        <h4 class="mb-3" style="color: #10b981;">
+            <i class="fas fa-graduation-cap me-2"></i>{{ selected_semester }} Timetable
+        </h4>
+    </div>
+
+    <!-- Screen-only Action Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print fade-in">
+        <div>
+            <h2 class="fw-bold header-gradient mb-1">
+                <i class="fas fa-university me-2"></i>{{ department.name }}
+            </h2>
+            <h4 class="text-emerald">
+                <i class="fas fa-graduation-cap me-2 icon-bounce"></i>{{ selected_semester }} Timetable
+            </h4>
+            {% if department.active_semester == selected_semester %}
+            <span class="badge bg-success"><i class="fas fa-check-circle"></i> ACTIVE</span>
+            {% else %}
+            <a href="{% url 'set_semester_active' department.id %}?semester={{ selected_semester }}"
+                class="btn btn-sm btn-outline-success">
+                <i class="fas fa-toggle-on"></i> Set as Active
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="btn-group no-print">
+            <a href="{% url 'timetable_create' %}?department={{ department.id }}&semester={{ selected_semester }}"
+                class="btn btn-gradient-emerald">
+                <i class="fas fa-plus me-2"></i>Add Entry
+            </a>
+            <button onclick="window.print()" class="btn btn-gradient-slate">
+                <i class="fas fa-print me-2"></i>Print
+            </button>
+            <!-- Add this with other action buttons -->
+            <a href="{% url 'share_timetable' department.id %}?semester={{ selected_semester }}" class="btn btn-info">
+                <i class="fas fa-share-alt me-2"></i>Share
+            </a>
+            <a href="{% url 'download_all_formats' department.id %}?semester={{ selected_semester }}"
+                class="btn btn-gradient-warning">
+                <i class="fas fa-download me-2"></i>Download Options
+            </a>
+            <a href="{% url 'department_semesters' department.id %}" class="btn btn-gradient-purple">
+                <i class="fas fa-arrow-left me-2"></i>Change Semester
+            </a>
+            {% if has_entries %}
+            <a href="{% url 'delete_all_entries' department.id %}?semester={{ selected_semester }}"
+                class="btn btn-danger shadow-sm"
+                onclick="return confirm('⚠️ WARNING: Delete ALL {{ selected_semester }} entries? This cannot be undone!')">
+                <i class="fas fa-trash-alt me-1"></i> Delete
+            </a>
+            {% endif %}
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'archive_current_timetable' department.id %}?semester={{ selected_semester }}"
+                class="btn btn-warning text-dark shadow-sm"
+                onclick="return confirm('Archive this timetable to the 2026 History?')">
+                <i class="fas fa-archive me-1"></i> Save to History
+            </a>
+
+            <a href="{% url 'department_history' department.id %}" class="btn btn-secondary shadow-sm">
+                <i class="fas fa-history me-1"></i> View History
+            </a>
+        </div>
+    </div>
+
+    <!-- Semester Navigation -->
+    {% if all_semesters and all_semesters|length > 1 %}
+    <div class="card modern-card mb-4 no-print slide-up">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-purple">
+                    <i class="fas fa-layer-group me-2"></i>Other Semesters:
+                </span>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for sem in all_semesters %}
+                    <a href="?semester={{ sem }}"
+                        class="btn btn-sm semester-btn {% if sem == selected_semester %}active{% endif %}">
+                        {{ sem }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Timetable -->
+    <div class="card modern-card shadow-lg scale-in" id="timetable-card">
+        <div class="card-header gradient-header text-white no-print">
+            <h5 class="mb-0">
+                <i class="fas fa-calendar-alt me-2 icon-pulse"></i>
+                Weekly Schedule - {{ selected_semester }}
+            </h5>
+        </div>
+
+        <div class="card-body p-0">
+            {% if has_entries %}
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead class="table-gradient">
+                        <tr>
+                            <th style="width: 15%;" class="align-middle text-center">Time Slot</th>
+                            {% for day in days %}
+                            <th class="align-middle text-center">{{ day }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in matrix %}
+                        <tr class="table-row-hover">
+                            <td class="fw-bold time-slot align-middle text-center">
+                                <i class="fas fa-clock me-2 text-purple"></i>{{ row.time }}
+                            </td>
+
+                            {% for entries in row.data %}
+                            <td class="p-1 align-top">
+                                {% if entries %}
+                                {% for entry in entries %}
+                                {% if entry.is_lab %}
+                                <!-- Lab session display -->
+                                <div class="p-2 mb-2 rounded position-relative timetable-entry lab-session">
+                                    <!-- Delete buttons for each faculty in lab -->
+                                    <div class="position-absolute top-0 end-0 d-flex gap-1 no-print">
+                                        {% for entry_id in entry.all_ids %}
+                                        <a href="{% url 'delete_entry' entry_id %}" class="delete-btn p-1"
+                                            onclick="return confirm('Delete this faculty from lab session?');"
+                                            title="Delete Faculty">
+                                            <i class="fas fa-user-times"></i>
+                                        </a>
+                                        {% endfor %}
+                                    </div>
+
+                                    <!-- Subject -->
+                                    <div class="fw-bold subject-text mb-1">
+                                        <i class="fas fa-flask me-1 icon-small"></i>
+                                        {{ entry.subject }} (Lab)
+                                    </div>
+
+                                    <!-- All Faculty in one list -->
+                                    <div class="small faculty-text">
+                                        <i class="fas fa-users me-1"></i>
+                                        {% for faculty_name in entry.faculties %}
+                                        <div class="faculty-name">{{ faculty_name }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <!-- Regular session display -->
+                                <div
+                                    class="p-2 mb-2 rounded position-relative timetable-entry {% if entry.faculty %}entry-with-faculty{% else %}entry-break{% endif %}">
+                                    <!-- Delete Button -->
+                                    <a href="{% url 'delete_entry' entry.id %}"
+                                        class="delete-btn position-absolute top-0 end-0 p-1 no-print"
+                                        onclick="return confirm('Delete this entry?');" title="Delete">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+
+                                    <!-- Subject -->
+                                    <div class="fw-bold subject-text mb-1">
+                                        <i class="fas fa-book-open me-1 icon-small"></i>
+                                        {{ entry.subject }}
+                                    </div>
+
+                                    <!-- Faculty -->
+                                    <div class="small faculty-text">
+                                        {% if entry.faculty %}
+                                        <i class="fas fa-chalkboard-teacher me-1"></i>
+                                        {{ entry.faculty.name }}
+                                        {% else %}
+                                        <i class="fas fa-coffee me-1"></i>
+                                        Break
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                                {% else %}
+                                <div class="text-center text-muted py-4 empty-slot">
+                                    <i class="fas fa-clock fa-lg"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 empty-state">
+                <i class="fas fa-calendar-plus fa-4x text-muted mb-3 icon-float"></i>
+                <h4>No Timetable Entries Yet</h4>
+                <p class="text-muted mb-4">This semester timetable is empty. Add your first entry!</p>
+                <a href="{% url 'timetable_create' %}?department={{ department.id }}&semester={{ selected_semester }}"
+                    class="btn btn-gradient-emerald btn-lg pulse-btn">
+                    <i class="fas fa-plus me-2"></i>Add First Entry
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer modern-footer text-center">
+            <small>
+                <i class="fas fa-info-circle me-1"></i>
+                {{ department.name }} - {{ selected_semester }} |
+                Generated: {% now "F j, Y" %}
+            </small>
+        </div>
+    </div>
+
+    <!-- Signature Section (Print Only) -->
+    <div class="signature-section" id="signature-section">
+        <div class="row mt-5 pt-4">
+            <div class="col-4 text-start">
+                <div class="signature-line"></div>
+                <p class="fw-bold mb-0">HOD</p>
+                <p class="small text-muted">{{ department.name }} Department</p>
+            </div>
+            <div class="col-4 text-center">
+                <div class="signature-line"></div>
+                <p class="fw-bold mb-0">Director</p>
+                <p class="small text-muted">D.H.B. Soni College</p>
+            </div>
+            <div class="col-4 text-end">
+                <div class="signature-line"></div>
+                <p class="fw-bold mb-0">Principal</p>
+                <p class="small text-muted">D.H.B. Soni College</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Section -->
+    <div class="row mt-4 no-print">
+        <div class="col-md-8">
+            <div class="card modern-card info-card">
+                <div class="card-body">
+                    <h6 class="text-amber">
+                        <i class="fas fa-lightbulb me-2"></i>Tips:
+                    </h6>
+                    <ul class="tips-list mb-0">
+                        <li>Click <span class="badge badge-emerald"><i class="fas fa-plus"></i> Add Entry</span> to add
+                            new subjects</li>
+                        <li>Use multiple faculty selection for lab sessions</li>
+                        <li>Leave faculty empty for breaks, recess, or lunch</li>
+                        <li>Click <i class="fas fa-times text-danger"></i> to delete any entry</li>
+                        <li>Use <span class="badge badge-slate"><i class="fas fa-print"></i> Print</span> for hard copy
+                        </li>
+                        <li>Use <span class="badge badge-danger"><i class="fas fa-file-pdf"></i> Download PDF</span> for
+                            digital copy</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card modern-card quick-switch-card">
+                <div class="card-body text-center">
+                    <h6 class="text-purple">
+                        <i class="fas fa-sync-alt me-2 icon-spin-hover"></i>Quick Switch
+                    </h6>
+                    <a href="{% url 'department_semesters' department.id %}" class="btn btn-outline-purple w-100 mb-2">
+                        <i class="fas fa-exchange-alt me-2"></i>Change Semester
+                    </a>
+                    <a href="{% url 'department_list' %}" class="btn btn-outline-slate w-100">
+                        <i class="fas fa-list me-2"></i>All Departments
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ADD THIS FOOTER SECTION AFTER THE INFO SECTION (after the row mt-4 no-print closing div) -->
+<!-- Place this right before the final </div> that closes container-fluid -->
+
+<!-- FOOTER SECTION -->
+<footer class="timetable-footer mt-5">
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="footer-section">
+                <h6 class="footer-heading">
+                    <i class="fas fa-university me-2"></i>D.H.B. SONI COLLEGE
+                </h6>
+                <p class="footer-text mb-1">Solapur, Maharashtra</p>
+                <p class="footer-text mb-1">
+                    <i class="fas fa-phone me-2"></i>Contact: +91-XXX-XXXXXXX
+                </p>
+                <p class="footer-text mb-0">
+                    <i class="fas fa-envelope me-2"></i>Email: info@dhbsoni.edu.in
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3 text-center">
+            <div class="footer-section">
+                <h6 class="footer-heading">
+                    <i class="fas fa-building me-2"></i>{{ department.name }} Department
+                </h6>
+                <p class="footer-text mb-1">Academic Year: 2025-26</p>
+                <p class="footer-text mb-1">Semester: {{ selected_semester }}</p>
+                <p class="footer-text mb-0">
+                    <i class="fas fa-calendar me-2"></i>Generated: {% now "F j, Y" %}
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3 text-end">
+            <div class="footer-section">
+                <h6 class="footer-heading">
+                    <i class="fas fa-info-circle me-2"></i>Important Notice
+                </h6>
+                <p class="footer-text mb-1">Subject to changes</p>
+                <p class="footer-text mb-1">Please verify schedule weekly</p>
+                <p class="footer-text mb-0">
+                    <i class="fas fa-clock me-2"></i>Last Updated: {% now "d/m/Y h:i A" %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-bottom text-center">
+        <p class="mb-0">
+            <i class="fas fa-copyright me-1"></i>2026 D.H.B. SONI COLLEGE | All Rights Reserved
+        </p>
+    </div>
+</footer>
+
+<!-- ADD THESE STYLES TO YOUR EXISTING <style> SECTION -->
+<style>
+    /* Footer Styles */
+    .timetable-footer {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        border-top: 3px solid var(--purple);
+        border-radius: 12px;
+        padding: 30px 25px 20px;
+        margin-top: 50px;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    .footer-section {
+        padding: 10px;
+    }
+
+    .footer-heading {
+        color: #ffffff;
+        font-weight: 700;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    .footer-heading i {
+        color: var(--emerald);
+    }
+
+    .footer-text {
+        color: #d1d5db;
+        font-size: 0.95rem;
+        line-height: 1.8;
+    }
+
+    .footer-text i {
+        color: var(--purple-light);
+        width: 20px;
+    }
+
+    .footer-bottom {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 2px solid #444444;
+        color: #9ca3af;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .footer-bottom i {
+        color: var(--emerald);
+    }
+
+    /* Responsive Footer */
+    @media (max-width: 768px) {
+        .timetable-footer {
+            padding: 20px 15px;
+        }
+
+        .col-md-4 {
+            text-align: center !important;
+        }
+
+        .footer-heading {
+            justify-content: center;
+        }
+    }
+
+    /* Print-specific footer styling */
+    @media print {
+        .timetable-footer {
+            page-break-inside: avoid;
+            margin-top: 30px !important;
+            padding: 15px !important;
+            background-color: #f8f9fa !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            border-top: 2px solid #000 !important;
+            box-shadow: none !important;
+        }
+
+        .footer-heading {
+            font-size: 11px !important;
+            color: #000 !important;
+            font-weight: bold !important;
+            margin-bottom: 8px !important;
+        }
+
+        .footer-text {
+            font-size: 10px !important;
+            color: #333 !important;
+            line-height: 1.4 !important;
+        }
+
+        .footer-bottom {
+            font-size: 9px !important;
+            color: #666 !important;
+            padding-top: 10px !important;
+            margin-top: 15px !important;
+            border-top: 1px solid #000 !important;
+        }
+
+        .footer-heading i,
+        .footer-text i,
+        .footer-bottom i {
+            color: #000 !important;
+        }
+    }
+
+    :root {
+        --purple: #7c3aed;
+        --purple-light: #a78bfa;
+        --purple-dark: #5b21b6;
+        --emerald: #10b981;
+        --emerald-light: #6ee7b7;
+        --emerald-dark: #059669;
+        --slate: #475569;
+        --slate-light: #94a3b8;
+        --amber: #f59e0b;
+        --rose: #f43f5e;
+        --danger: #ef4444;
+        --danger-dark: #dc2626;
+        --lab-blue: #0ea5e9;
+        --lab-light: #e0f2fe;
+    }
+
+    /* Color Utilities */
+    .text-purple {
+        color: var(--purple) !important;
+    }
+
+    .text-emerald {
+        color: var(--emerald) !important;
+    }
+
+    .text-amber {
+        color: var(--amber) !important;
+    }
+
+    .text-danger {
+        color: var(--danger) !important;
+    }
+
+    /* Gradient Text */
+    .header-gradient {
+        background: linear-gradient(135deg, var(--purple) 0%, var(--emerald) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Modern Breadcrumb */
+    .modern-breadcrumb {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 12px;
+        padding: 12px 20px;
+        border: 1px solid #e2e8f0;
+        animation: slideDown 0.5s ease-out;
+    }
+
+    .modern-breadcrumb a {
+        color: var(--purple);
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .modern-breadcrumb a:hover {
+        color: var(--purple-dark);
+        transform: translateX(3px);
+        display: inline-block;
+    }
+
+    /* Gradient Buttons */
+    .btn-gradient-emerald {
+        background: linear-gradient(135deg, var(--emerald) 0%, var(--emerald-dark) 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-gradient-emerald:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        color: white;
+    }
+
+    .btn-gradient-slate {
+        background: linear-gradient(135deg, var(--slate) 0%, var(--slate-light) 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(71, 85, 105, 0.3);
+    }
+
+    .btn-gradient-slate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(71, 85, 105, 0.4);
+        color: white;
+    }
+
+    .btn-gradient-purple {
+        background: linear-gradient(135deg, var(--purple) 0%, var(--purple-dark) 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    }
+
+    .btn-gradient-purple:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+        color: white;
+    }
+
+    .btn-gradient-danger {
+        background: linear-gradient(135deg, var(--danger) 0%, var(--danger-dark) 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-gradient-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        color: white;
+    }
+
+    .btn-gradient-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-gradient-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        color: white;
+    }
+
+    .btn-gradient-info {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+    }
+
+    .btn-gradient-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+        color: white;
+    }
+
+    /* Modern Card */
+    .modern-card {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        background: white;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .modern-card:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+
+    /* Semester Buttons */
+    .semester-btn {
+        border: 2px solid var(--purple-light);
+        color: var(--purple);
+        background: white;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+
+    .semester-btn:hover {
+        background: var(--purple-light);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .semester-btn.active {
+        background: linear-gradient(135deg, var(--purple) 0%, var(--purple-dark) 100%);
+        color: white;
+        border-color: var(--purple);
+    }
+
+    /* Gradient Header */
+    .gradient-header {
+        background: linear-gradient(135deg, var(--purple) 0%, var(--emerald) 100%);
+        padding: 15px 20px;
+    }
+
+    /* Modern Table - UPDATED FOR VISIBLE BORDERS */
+    .table-modern {
+        border-collapse: collapse !important;
+        border: 1px solid #d1d5db !important;
+        width: 100%;
+    }
+
+    .table-modern th,
+    .table-modern td {
+        border: 1px solid #d1d5db !important;
+        padding: 12px;
+    }
+
+    .table-modern thead th {
+        border-bottom: 2px solid var(--purple) !important;
+    }
+
+    .table-modern tbody td {
+        padding: 8px !important;
+    }
+
+    .table-gradient {
+        background: linear-gradient(135deg, var(--slate) 0%, var(--purple-dark) 100%);
+        color: white;
+    }
+
+    .table-gradient th {
+        font-weight: 600;
+        padding: 12px;
+        border: none !important;
+    }
+
+    .table-row-hover:hover {
+        background: linear-gradient(to right, #faf5ff 0%, #f0fdf4 100%);
+    }
+
+    .time-slot {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    /* Timetable Entries */
+    .timetable-entry {
+        border: 1px solid #d1d5db !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        animation: fadeInUp 0.5s ease-out backwards;
+    }
+
+    .entry-with-faculty {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border-color: var(--emerald) !important;
+    }
+
+    .entry-with-faculty:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.25);
+        border-color: var(--emerald-dark) !important;
+    }
+
+    .entry-break {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-color: var(--amber) !important;
+    }
+
+    .entry-break:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(245, 158, 11, 0.25);
+        border-color: var(--amber) !important;
+    }
+
+    /* Lab Session Styling */
+    .lab-session {
+        background: linear-gradient(135deg, var(--lab-light) 0%, #bae6fd 100%);
+        border-color: var(--lab-blue) !important;
+    }
+
+    .lab-session:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(14, 165, 233, 0.25);
+        border-color: #0284c7 !important;
+    }
+
+    .lab-session .subject-text {
+        color: #0369a1 !important;
+    }
+
+    .lab-session .faculty-text .faculty-name {
+        padding: 2px 0;
+        border-bottom: 1px dashed #93c5fd;
+    }
+
+    .lab-session .faculty-text .faculty-name:last-child {
+        border-bottom: none;
+    }
+
+    .subject-text {
+        color: var(--slate);
+        font-size: 0.95rem;
+    }
+
+    .faculty-text {
+        color: var(--slate-light);
+    }
+
+    .delete-btn {
+        color: var(--rose);
+        transition: all 0.3s ease;
+        opacity: 0;
+        transform: scale(0.8);
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 4px;
+        padding: 2px 4px;
+    }
+
+    .timetable-entry:hover .delete-btn {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .delete-btn:hover {
+        background: #ef4444;
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .empty-slot {
+        transition: all 0.3s ease;
+        border: 1px solid #e5e7eb !important;
+    }
+
+    .empty-slot:hover {
+        background: #f8fafc;
+    }
+
+    /* Badges */
+    .badge-emerald {
+        background: linear-gradient(135deg, var(--emerald) 0%, var(--emerald-dark) 100%);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+
+    .badge-slate {
+        background: linear-gradient(135deg, var(--slate) 0%, var(--slate-light) 100%);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+
+    .badge-danger {
+        background: linear-gradient(135deg, var(--danger) 0%, var(--danger-dark) 100%);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+
+    /* Outline Buttons */
+    .btn-outline-purple {
+        border: 2px solid var(--purple);
+        color: var(--purple);
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-purple:hover {
+        background: linear-gradient(135deg, var(--purple) 0%, var(--purple-dark) 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    }
+
+    .btn-outline-slate {
+        border: 2px solid var(--slate);
+        color: var(--slate);
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-slate:hover {
+        background: linear-gradient(135deg, var(--slate) 0%, var(--slate-light) 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(71, 85, 105, 0.3);
+    }
+
+    /* Footer */
+    .modern-footer {
+        background: linear-gradient(to right, #f8fafc 0%, #f1f5f9 100%);
+        color: var(--slate);
+        padding: 12px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    /* Info Cards */
+    .info-card {
+        border-left: 4px solid var(--amber);
+    }
+
+    .quick-switch-card {
+        border-left: 4px solid var(--purple);
+    }
+
+    .tips-list li {
+        margin-bottom: 8px;
+        color: var(--slate);
+        transition: all 0.3s ease;
+    }
+
+    .tips-list li:hover {
+        color: var(--purple);
+        transform: translateX(5px);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    @keyframes bounce {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    .fade-in {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .slide-up {
+        animation: fadeInUp 0.7s ease-out;
+    }
+
+    .scale-in {
+        animation: scaleIn 0.5s ease-out;
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .header-animate {
+        animation: slideDown 0.8s ease-out;
+    }
+
+    .icon-bounce {
+        display: inline-block;
+        animation: bounce 2s infinite;
+    }
+
+    .icon-pulse {
+        display: inline-block;
+        animation: pulse 2s infinite;
+    }
+
+    .icon-float {
+        display: inline-block;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .icon-spin-hover {
+        transition: transform 0.6s ease;
+    }
+
+    .icon-spin-hover:hover {
+        transform: rotate(360deg);
+    }
+
+    .pulse-btn {
+        animation: pulse 2s infinite;
+    }
+
+    /* Hide print header on screen, show during print */
+    #print-header {
+        display: none;
+    }
+
+    @media screen {
+        #print-header {
+            display: none !important;
+        }
+    }
+
+    /* Hide signature section on screen */
+    #signature-section {
+        display: none;
+    }
+
+    .signature-line {
+        border-top: 2px solid #000;
+        margin-bottom: 10px;
+        width: 200px;
+        display: inline-block;
+    }
+
+    @media print {
+
+        /* Force show print header */
+        #print-header {
+            display: block !important;
+            visibility: visible !important;
+            margin-bottom: 20px !important;
+            page-break-inside: avoid !important;
+        }
+
+        #print-header h3,
+        #print-header h4 {
+            display: block !important;
+            visibility: visible !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #print-header h3 {
+            font-size: 20px !important;
+            margin-bottom: 8px !important;
+            color: #000 !important;
+            font-weight: bold !important;
+        }
+
+        #print-header h4 {
+            font-size: 16px !important;
+            margin-bottom: 6px !important;
+            font-weight: bold !important;
+        }
+
+        #print-header h4:nth-of-type(1) {
+            color: #7c3aed !important;
+        }
+
+        #print-header h4:nth-of-type(2) {
+            color: #10b981 !important;
+        }
+
+        #signature-section {
+            display: block !important;
+            page-break-inside: avoid;
+            margin-top: 40px !important;
+        }
+
+        .signature-line {
+            border-top: 2px solid #000 !important;
+            margin-bottom: 8px !important;
+            width: 180px !important;
+        }
+
+        #signature-section .fw-bold {
+            font-size: 12px !important;
+            margin-bottom: 2px !important;
+        }
+
+        #signature-section .small {
+            font-size: 10px !important;
+        }
+
+        /* Hide all non-essential elements */
+        .no-print {
+            display: none !important;
+        }
+
+        .breadcrumb,
+        .btn-group,
+        nav,
+        header,
+        .card:not(#timetable-card),
+        .row.mt-4 {
+            display: none !important;
+        }
+
+        body {
+            font-size: 11px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container-fluid {
+            padding: 10mm 5mm;
+            margin: 0;
+            width: 100%;
+        }
+
+        /* Card Styling for Print */
+        #timetable-card {
+            border: 2px solid #000 !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+        }
+
+        .card-body {
+            padding: 0 !important;
+        }
+
+        .card-header {
+            padding: 10px !important;
+            background-color: #7c3aed !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            border-bottom: 2px solid #000 !important;
+        }
+
+        .card-footer {
+            padding: 5px !important;
+            font-size: 10px !important;
+            border-top: 1px solid #000 !important;
+        }
+
+        /* Table Styling for Print - Make borders visible */
+        table {
+            page-break-inside: auto;
+            width: 100% !important;
+            border-collapse: collapse !important;
+            border: 2px solid #000 !important;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+            border-bottom: 1px solid #000 !important;
+        }
+
+        th,
+        td {
+            border: 1px solid #000 !important;
+            padding: 8px !important;
+        }
+
+        thead {
+            display: table-header-group;
+            background-color: #475569 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .table-gradient {
+            background-color: #475569 !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .table-gradient th {
+            font-weight: bold !important;
+            font-size: 11px !important;
+            padding: 8px !important;
+            border: 1px solid #000 !important;
+        }
+
+        .time-slot {
+            background-color: #f8f9fa !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            font-weight: bold !important;
+            border: 1px solid #000 !important;
+        }
+
+        .timetable-entry {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            box-shadow: none !important;
+            border: 1px solid #666 !important;
+            background-color: #ffffff !important;
+            padding: 8px !important;
+            margin-bottom: 4px !important;
+        }
+
+        .lab-session {
+            background-color: #f0f9ff !important;
+            border-color: #0ea5e9 !important;
+        }
+
+        .timetable-entry .fw-bold {
+            font-size: 11px !important;
+            color: #000 !important;
+            font-weight: bold !important;
+        }
+
+        .timetable-entry .small {
+            font-size: 10px !important;
+            color: #333 !important;
+        }
+
+        .lab-session .subject-text {
+            color: #0369a1 !important;
+        }
+
+        .fa-times,
+        .fa-user-times,
+        a[href*="delete"] {
+            display: none !important;
+        }
+
+        td.fw-bold {
+            font-size: 11px !important;
+            font-weight: bold !important;
+        }
+
+        td.small {
+            font-size: 9px !important;
+        }
+
+        td {
+            padding: 5px !important;
+            vertical-align: top !important;
+            border: 1px solid #000 !important;
+        }
+
+        th {
+            padding: 8px !important;
+            border: 1px solid #000 !important;
+        }
+
+        #timetable-card {
+            page-break-inside: avoid;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+        }
+    }
+</style>
+
+<script>
+    function downloadPDF() {
+        window.print();
+    }
+</script>
+
+{% endblock %}

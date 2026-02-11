@@ -1,0 +1,78 @@
+{% extends 'timetable/base.html' %}
+{% block content %}
+
+<div class="container-fluid">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb modern-breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'department_list' %}">Departments</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'department_semesters' department.id %}">{{ department.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'timetable_view' department.id %}?semester={{ selected_semester }}">{{ selected_semester }}</a></li>
+            <li class="breadcrumb-item active">Delete All Entries</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-danger shadow-lg scale-in">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Delete All Timetable Entries</h4>
+                </div>
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-trash-alt fa-5x text-danger mb-4"></i>
+                        <h3 class="fw-bold text-danger">Warning!</h3>
+                        <p class="lead">You are about to delete ALL timetable entries for:</p>
+                        <div class="alert alert-warning">
+                            <h5 class="mb-1">{{ department.name }} Department</h5>
+                            <h6 class="mb-0">{{ selected_semester }}</h6>
+                        </div>
+                        
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <strong>{{ entry_count }}</strong> entries will be permanently deleted!
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            This action cannot be undone. Please make sure you have archived this timetable to history before proceeding.
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-center gap-3">
+                            <button type="submit" class="btn btn-danger btn-lg px-5">
+                                <i class="fas fa-trash me-2"></i>Yes, Delete All Entries
+                            </button>
+                            <a href="{% url 'timetable_view' department.id %}?semester={{ selected_semester }}" 
+                               class="btn btn-outline-secondary btn-lg px-5">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .scale-in {
+        animation: scaleIn 0.5s ease-out;
+    }
+    
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+</style>
+
+{% endblock %}
