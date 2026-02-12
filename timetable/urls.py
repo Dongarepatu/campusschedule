@@ -9,7 +9,8 @@ urlpatterns = [
     path('department/<int:dept_id>/semesters/', views.department_semesters, name='department_semesters'),
     
     # Timetable routes
-    path('timetable/<int:dept_id>/', views.timetable_view, name='timetable_view'),
+   # path('timetable/<int:dept_id>/', views.timetable_view, name='timetable_view'),
+    path('<int:dept_id>/', views.timetable_view, name='timetable_view'),
     path('timetable/<int:dept_id>/pdf/', views.download_timetable_pdf, name='download_timetable_pdf'),
     path('entry/create/', views.timetable_create, name='timetable_create'),
     path('entry/delete/<int:entry_id>/', views.delete_entry, name='delete_entry'),
