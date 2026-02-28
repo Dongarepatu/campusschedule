@@ -1,0 +1,7 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"  # This connects your PC's port 8000 to Docker's port 8000
+    volumes:
+      - .:/app       # This syncs your code so changes show up instantly
